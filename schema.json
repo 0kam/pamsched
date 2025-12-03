@@ -1,0 +1,450 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "RecordingSchedule",
+    "description": "Root object representing a complete recording schedule.",
+    "type": "object",
+    "example": [
+        {
+            "version": "0.1.0",
+            "pattern_type": "continuous",
+            "continuous": {}
+        }
+    ],
+    "properties": {
+        "version": {
+            "description": "Version of the DSL used (e.g., \"0.1.0\").",
+            "type": "string",
+            "example": [
+                "0.1.0"
+            ]
+        },
+        "pattern_type": {
+            "description": "The active pattern type.",
+            "type": "string",
+            "enum": [
+                "continuous",
+                "scheduled",
+                "triggered"
+            ],
+            "example": [
+                "continuous"
+            ]
+        },
+        "continuous": {
+            "description": "Configuration for continuous pattern. Required if pattern_type is CONTINUOUS.",
+            "allOf": [
+                {
+                    "$ref": "#/definitions/ContinuousPattern"
+                }
+            ]
+        },
+        "scheduled": {
+            "description": "Configuration for scheduled pattern. Required if pattern_type is SCHEDULED.",
+            "allOf": [
+                {
+                    "$ref": "#/definitions/ScheduledPattern"
+                }
+            ]
+        },
+        "triggered": {
+            "description": "Configuration for triggered pattern. Required if pattern_type is TRIGGERED.",
+            "allOf": [
+                {
+                    "$ref": "#/definitions/TriggeredPattern"
+                }
+            ]
+        }
+    },
+    "required": [
+        "version",
+        "pattern_type"
+    ],
+    "definitions": {
+        "ContinuousPattern": {
+            "description": "Represents a continuous recording pattern.",
+            "type": "object",
+            "properties": {
+                "start_at": {
+                    "description": "ISO 8601 datetime string indicating when to start recording. If None, starts immediately.",
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "example": [
+                        "2023-01-01T00:00:00Z"
+                    ]
+                },
+                "end_at": {
+                    "description": "ISO 8601 datetime string indicating when to stop recording. If None, records indefinitely until stopped.",
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "example": [
+                        "2023-01-02T00:00:00Z"
+                    ]
+                }
+            },
+            "example": [
+                {
+                    "start_at": "2023-01-01T00:00:00Z",
+                    "end_at": "2023-01-02T00:00:00Z"
+                }
+            ]
+        },
+        "ScheduledPattern": {
+            "description": "Represents a scheduled recording pattern.",
+            "type": "object",
+            "properties": {
+                "windows": {
+                    "description": "List of time windows during which the schedule is active.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Window"
+                    }
+                },
+                "cycle": {
+                    "description": "Duty cycle configuration to apply within the active windows.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/Cycle"
+                        }
+                    ]
+                },
+                "timezone": {
+                    "description": "IANA timezone string (e.g., \"Asia/Tokyo\"). If None, implies UTC or device local time depending on context.",
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "example": [
+                        "Asia/Tokyo"
+                    ]
+                }
+            },
+            "required": [
+                "windows",
+                "cycle"
+            ],
+            "example": [
+                {
+                    "windows": [
+                        {
+                            "window_type": "fixed",
+                            "start": "08:00",
+                            "end": "18:00"
+                        }
+                    ],
+                    "cycle": {
+                        "record_seconds": 60,
+                        "sleep_seconds": 300
+                    },
+                    "timezone": "Asia/Tokyo"
+                }
+            ]
+        },
+        "Window": {
+            "description": "Represents a time window for scheduled recording.",
+            "type": "object",
+            "properties": {
+                "window_type": {
+                    "description": "Type of the window, either \"fixed\" or \"solar\".",
+                    "type": "string",
+                    "enum": [
+                        "fixed",
+                        "solar"
+                    ],
+                    "example": [
+                        "fixed"
+                    ]
+                },
+                "start": {
+                    "description": "Start time of the window. Format: \"HH:MM\" for fixed windows, or e.g. \"sunrise-10m\" for solar.",
+                    "type": "string",
+                    "example": [
+                        "08:00",
+                        "sunrise-10m"
+                    ]
+                },
+                "end": {
+                    "description": "End time of the window. Format: \"HH:MM\" for fixed windows, or e.g. \"sunset+10m\" for solar.",
+                    "type": "string",
+                    "example": [
+                        "18:00",
+                        "sunset+10m"
+                    ]
+                },
+                "days_of_week": {
+                    "description": "List of days of the week to apply this window (e.g., [\"Mon\", \"Tue\"]). If None, applies to all days.",
+                    "type": [
+                        "array",
+                        "null"
+                    ],
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        [
+                            "Mon",
+                            "Tue"
+                        ]
+                    ]
+                },
+                "months": {
+                    "description": "List of months (1-12) to apply this window. If None, applies to all months.",
+                    "type": [
+                        "array",
+                        "null"
+                    ],
+                    "items": {
+                        "type": "integer"
+                    },
+                    "example": [
+                        [
+                            1,
+                            2,
+                            12
+                        ]
+                    ]
+                }
+            },
+            "required": [
+                "window_type",
+                "start",
+                "end"
+            ],
+            "example": [
+                {
+                    "window_type": "fixed",
+                    "start": "08:00",
+                    "end": "18:00"
+                }
+            ]
+        },
+        "Cycle": {
+            "description": "Represents a duty cycle for recording.",
+            "type": "object",
+            "properties": {
+                "record_seconds": {
+                    "description": "Number of seconds to record.",
+                    "type": "integer",
+                    "example": [
+                        60
+                    ]
+                },
+                "sleep_seconds": {
+                    "description": "Number of seconds to sleep between recordings.",
+                    "type": "integer",
+                    "example": [
+                        300
+                    ]
+                }
+            },
+            "required": [
+                "record_seconds",
+                "sleep_seconds"
+            ],
+            "example": [
+                {
+                    "record_seconds": 60,
+                    "sleep_seconds": 300
+                }
+            ]
+        },
+        "TriggeredPattern": {
+            "description": "Represents a triggered recording pattern.",
+            "type": "object",
+            "properties": {
+                "triggers": {
+                    "description": "List of triggers that can activate recording.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Trigger"
+                    }
+                },
+                "max_duration": {
+                    "description": "Maximum duration in seconds for a single triggered recording.",
+                    "type": [
+                        "integer",
+                        "null"
+                    ],
+                    "example": [
+                        600
+                    ]
+                }
+            },
+            "required": [
+                "triggers"
+            ],
+            "example": [
+                {
+                    "triggers": [
+                        {
+                            "trigger_type": "sensor",
+                            "sensor": {
+                                "kind": "temperature_c",
+                                "op": ">",
+                                "threshold": 25.0
+                            }
+                        }
+                    ],
+                    "max_duration": 600
+                }
+            ]
+        },
+        "Trigger": {
+            "description": "Represents a single trigger configuration.",
+            "type": "object",
+            "properties": {
+                "trigger_type": {
+                    "description": "The type of trigger.",
+                    "type": "string",
+                    "enum": [
+                        "sensor",
+                        "audio",
+                        "event"
+                    ],
+                    "example": [
+                        "sensor"
+                    ]
+                },
+                "sensor": {
+                    "description": "Configuration for sensor trigger. Required if trigger_type is SENSOR.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/SensorTrigger"
+                        }
+                    ]
+                },
+                "audio": {
+                    "description": "Configuration for audio trigger. Required if trigger_type is AUDIO.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/AudioTrigger"
+                        }
+                    ]
+                },
+                "event": {
+                    "description": "Configuration for event trigger. Required if trigger_type is EVENT.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/EventTrigger"
+                        }
+                    ]
+                }
+            },
+            "required": [
+                "trigger_type"
+            ],
+            "example": [
+                {
+                    "trigger_type": "sensor",
+                    "sensor": {
+                        "kind": "temperature_c",
+                        "op": ">",
+                        "threshold": 25.0
+                    }
+                }
+            ]
+        },
+        "SensorTrigger": {
+            "description": "Configuration for a sensor-based trigger.",
+            "type": "object",
+            "properties": {
+                "kind": {
+                    "description": "Type of sensor (e.g., \"temperature_c\", \"light_lux\", \"battery_v\").",
+                    "type": "string",
+                    "example": [
+                        "temperature_c"
+                    ]
+                },
+                "op": {
+                    "description": "Comparison operator (\">\", \">=\", \"<\", \"<=\").",
+                    "type": "string",
+                    "example": [
+                        ">"
+                    ]
+                },
+                "threshold": {
+                    "description": "Threshold value for the trigger.",
+                    "type": "number",
+                    "example": [
+                        25.0
+                    ]
+                }
+            },
+            "required": [
+                "kind",
+                "op",
+                "threshold"
+            ],
+            "example": [
+                {
+                    "kind": "temperature_c",
+                    "op": ">",
+                    "threshold": 25.0
+                }
+            ]
+        },
+        "AudioTrigger": {
+            "description": "Configuration for an audio-based trigger.",
+            "type": "object",
+            "properties": {
+                "class_label": {
+                    "description": "Label of the audio class to detect (e.g., \"bird\").",
+                    "type": "string",
+                    "example": [
+                        "bird"
+                    ]
+                },
+                "min_confidence": {
+                    "description": "Minimum confidence score required to trigger (0.0 to 1.0).",
+                    "type": "number",
+                    "example": [
+                        0.8
+                    ]
+                }
+            },
+            "required": [
+                "class_label",
+                "min_confidence"
+            ],
+            "example": [
+                {
+                    "class_label": "bird",
+                    "min_confidence": 0.8
+                }
+            ]
+        },
+        "EventTrigger": {
+            "description": "Configuration for an event-based trigger.",
+            "type": "object",
+            "properties": {
+                "name": {
+                    "description": "Name of the event (e.g., \"rain_stopped\").",
+                    "type": "string",
+                    "example": [
+                        "rain_stopped"
+                    ]
+                },
+                "offset_seconds": {
+                    "description": "Time offset in seconds relative to the event.",
+                    "type": "integer",
+                    "default": 0,
+                    "example": [
+                        60
+                    ]
+                }
+            },
+            "required": [
+                "name"
+            ],
+            "example": [
+                {
+                    "name": "rain_stopped",
+                    "offset_seconds": 60
+                }
+            ]
+        }
+    }
+}
